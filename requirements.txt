@@ -1,8 +1,3 @@
-import streamlit as st
-import sqlite3
-import pandas as pd
-import hashlib
-
 # ---------- DATABASE ----------
 conn = sqlite3.connect("sehatsahara.db", check_same_thread=False)
 c = conn.cursor()
