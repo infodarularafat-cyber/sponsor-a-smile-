@@ -1,179 +1,91 @@
 import streamlit as st
-import sqlite3
-import pandas as pd
-import hashlib
-import datetime
 
-# ---------- DATABASE ----------
-conn = sqlite3.connect("sehatsahara.db", check_same_thread=False)
-c = conn.cursor()
+# ---------- PAGE SETTINGS ----------
+st.set_page_config(page_title="Sponsor A Smile", page_icon="💚", layout="wide")
 
-def create_tables():
-    c.execute('''CREATE TABLE IF NOT EXISTS users(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT,
-                password TEXT,
-                role TEXT)''')
+# ---------- CUSTOM CSS (COLORS & STYLING) ----------
+st.markdown("""
+    <style>
+    .stApp { background-color: #f0f4f7; }
+    [data-testid="stSidebar"] { background-color: #ffffff; border-right: 2px solid #2ecc71; }
+    .stButton>button {
+        background-color: #2ecc71;
+        color: white;
+        border-radius: 12px;
+        font-weight: bold;
+        border: none;
+        transition: 0.3s;
+    }
+    .stButton>button:hover { background-color: #27ae60; border: none; }
+    .card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    c.execute('''CREATE TABLE IF NOT EXISTS appointments(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                city TEXT,
-                specialist TEXT,
-                date TEXT)''')
+# ---------- SIDEBAR (MENU WITH ICONS) ----------
+with st.sidebar:
+    st.markdown("<h2 style='color: #2ecc71;'>🏥 Menu</h2>", unsafe_allow_html=True)
+    choice = st.radio(
+        "Select an option:",
+        ["🏠 Home", "📝 Book Appointment", "🎁 Donate Now", "ℹ️ Help Center"]
+    )
+    st.divider()
+    st.write("Logged in as: **User**")
 
-    c.execute('''CREATE TABLE IF NOT EXISTS loans(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                amount REAL,
-                duration INTEGER,
-                emi REAL)''')
+# ---------- HOME PAGE ----------
+if choice == "🏠 Home":
+    st.markdown("<h1 style='text-align: center;'>💚 Sponsor A Smile</h1>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: grey;'>Helping hands for those in need.</h3>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown('<div class="card"><h3>❤️ 1200+</h3><p>Lives Impacted</p></div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="card"><h3>💰 5M+</h3><p>Donations Raised</p></div>', unsafe_allow_html=True)
+    with col3:
+        st.markdown('<div class="card"><h3>🤝 300+</h3><p>Volunteers</p></div>', unsafe_allow_html=True)
+    
+    st.image("https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80", use_container_width=True)
 
-    c.execute('''CREATE TABLE IF NOT EXISTS campaigns(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                patient TEXT,
-                disease TEXT,
-                required REAL,
-                raised REAL DEFAULT 0)''')
+# ---------- APPOINTMENT PAGE ----------
+elif choice == "📝 Book Appointment":
+    st.header("📝 Book Your Free Consultation")
+    with st.container():
+        name = st.text_input("Full Name")
+        city = st.selectbox("Select City", ["Karachi", "Lahore", "Islamabad", "Quetta", "Peshawar"])
+        problem = st.text_area("What is the health issue?")
+        
+        if st.button("Submit Request"):
+            if name and problem:
+                st.success(f"Thank you {name}! Your request has been sent to our doctors.")
+                st.balloons()
+            else:
+                st.error("Please fill all details!")
 
-    conn.commit()
+# ---------- DONATE PAGE ----------
+elif choice == "🎁 Donate Now":
+    st.header("🎁 Active Medical Cases")
+    st.write("Help us save lives by contributing to these urgent cases.")
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.markdown('<div class="card"><h4>Baby Sarah - Heart Surgery</h4><p>Target: Rs. 400,000</p></div>', unsafe_allow_html=True)
+        st.progress(0.65)
+        st.button("Donate for Sarah")
+        
+    with col_b:
+        st.markdown('<div class="card"><h4>Mr. Khan - Kidney Dialysis</h4><p>Target: Rs. 150,000</p></div>', unsafe_allow_html=True)
+        st.progress(0.30)
+        st.button("Donate for Mr. Khan")
 
-create_tables()
-
-# ---------- HELPERS ----------
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def add_user(username, password, role):
-    c.execute("INSERT INTO users(username,password,role) VALUES(?,?,?)",
-              (username, hash_password(password), role))
-    conn.commit()
-
-def login_user(username, password):
-    c.execute("SELECT * FROM users WHERE username=? AND password=?",
-              (username, hash_password(password)))
-    return c.fetchone()
-
-# ---------- UI ----------
-st.set_page_config(page_title="SehatSahara", layout="wide")
-st.title("💚 SehatSahara - Healthcare Financing Platform")
-
-menu = st.sidebar.selectbox("Menu",
-                            ["Home", "Login", "Signup",
-                             "Book Appointment",
-                             "Apply Loan",
-                             "Raise Funds",
-                             "Donate",
-                             "Admin Dashboard"])
-
-# ---------- HOME ----------
-if menu == "Home":
-    st.write("### Welcome to SehatSahara")
-    st.write("Book doctors, apply for medical loans, or raise funds.")
-
-# ---------- SIGNUP ----------
-elif menu == "Signup":
-    st.subheader("Create Account")
-    new_user = st.text_input("Username")
-    new_pass = st.text_input("Password", type='password')
-    role = st.selectbox("Role", ["Patient", "Doctor", "Donor"])
-
-    if st.button("Signup"):
-        add_user(new_user, new_pass, role)
-        st.success("Account Created Successfully!")
-
-# ---------- LOGIN ----------
-elif menu == "Login":
-    st.subheader("Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type='password')
-
-    if st.button("Login"):
-        user = login_user(username, password)
-        if user:
-            st.success(f"Welcome {username}")
-        else:
-            st.error("Invalid Credentials")
-
-# ---------- APPOINTMENT ----------
-elif menu == "Book Appointment":
-    st.subheader("Book Doctor Appointment")
-
-    name = st.text_input("Your Name")
-    city = st.selectbox("City", ["Islamabad", "Rawalpindi", "Lahore"])
-    specialist = st.selectbox("Specialist",
-                              ["Cardiologist", "Dermatologist", "Oncologist"])
-    date = st.date_input("Select Date")
-
-    if st.button("Book"):
-        c.execute("INSERT INTO appointments(name,city,specialist,date) VALUES(?,?,?,?)",
-                  (name, city, specialist, str(date)))
-        conn.commit()
-        st.success("Appointment Booked!")
-
-# ---------- LOAN ----------
-elif menu == "Apply Loan":
-    st.subheader("Medical Loan Calculator")
-
-    name = st.text_input("Your Name")
-    P = st.number_input("Treatment Cost (PKR)", min_value=0.0)
-    rate = 0.12 / 12  # 12% yearly interest
-    n = st.number_input("Duration (Months)", min_value=1)
-
-    if st.button("Calculate & Apply"):
-        emi = (P * rate * (1 + rate)**n) / ((1 + rate)**n - 1)
-        c.execute("INSERT INTO loans(name,amount,duration,emi) VALUES(?,?,?,?)",
-                  (name, P, n, emi))
-        conn.commit()
-        st.success(f"Loan Applied! Monthly EMI: {round(emi,2)} PKR")
-
-# ---------- RAISE FUNDS ----------
-elif menu == "Raise Funds":
-    st.subheader("Create Fundraising Campaign")
-
-    patient = st.text_input("Patient Name")
-    disease = st.text_input("Disease")
-    required = st.number_input("Required Amount (PKR)", min_value=0.0)
-
-    if st.button("Create Campaign"):
-        c.execute("INSERT INTO campaigns(patient,disease,required) VALUES(?,?,?)",
-                  (patient, disease, required))
-        conn.commit()
-        st.success("Campaign Created Successfully!")
-
-# ---------- DONATE ----------
-elif menu == "Donate":
-    st.subheader("Donate to Campaign")
-
-    campaigns = pd.read_sql_query("SELECT * FROM campaigns", conn)
-
-    if not campaigns.empty:
-        campaign_id = st.selectbox("Select Campaign",
-                                   campaigns["id"])
-
-        amount = st.number_input("Donation Amount", min_value=0.0)
-
-        if st.button("Donate"):
-            c.execute("UPDATE campaigns SET raised = raised + ? WHERE id=?",
-                      (amount, campaign_id))
-            conn.commit()
-            st.success("Thank you for your donation ❤️")
-
-    else:
-        st.info("No campaigns available.")
-
-# ---------- ADMIN ----------
-elif menu == "Admin Dashboard":
-    st.subheader("Admin Dashboard")
-
-    st.write("### Users")
-    st.dataframe(pd.read_sql_query("SELECT * FROM users", conn))
-
-    st.write("### Appointments")
-    st.dataframe(pd.read_sql_query("SELECT * FROM appointments", conn))
-
-    st.write("### Loans")
-    st.dataframe(pd.read_sql_query("SELECT * FROM loans", conn))
-
-    st.write("### Campaigns")
-    st.dataframe(pd.read_sql_query("SELECT * FROM campaigns", conn))
+# ---------- HELP CENTER ----------
+elif choice == "ℹ️ Help Center":
+    st.header("ℹ️ How can we help you?")
+    st.write("Contact us for any medical emergencies or financial support.")
+    st.info("Emergency Helpline: 0800-SMILE-00")
